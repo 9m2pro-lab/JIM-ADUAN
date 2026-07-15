@@ -33,6 +33,45 @@ if (apiKey) {
   console.log("No GEMINI_API_KEY environment variable found. Falling back to simulated AI mode.");
 }
 
+// Robust content generation helper with retries and model fallback
+async function generateContentWithRetry(
+  prompt: string,
+  config: any = { responseMimeType: "application/json" },
+  maxRetries = 2
+): Promise<string | null> {
+  if (!ai) return null;
+
+  const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite"];
+  
+  for (const model of modelsToTry) {
+    let delay = 1000;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Calling Gemini with model ${model} (Attempt ${attempt}/${maxRetries})...`);
+        const response = await ai.models.generateContent({
+          model: model,
+          contents: prompt,
+          config: config,
+        });
+        
+        const text = response.text?.trim();
+        if (text) {
+          return text;
+        }
+      } catch (err: any) {
+        console.warn(`Attempt ${attempt} with model ${model} failed: ${err.message || err}`);
+        if (attempt < maxRetries) {
+          const jitter = Math.random() * 200;
+          await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+          delay *= 2;
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
 // In-memory data store for our session
 interface Complaint {
   id: string;
@@ -487,15 +526,14 @@ Jana jawapan anda dalam format JSON tulen berikut:
   }
 }`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-        },
+      const responseText = await generateContentWithRetry(prompt, {
+        responseMimeType: "application/json",
       });
 
-      const responseText = response.text?.trim() || "";
+      if (!responseText) {
+        throw new Error("Gemini returned empty or failed all attempts.");
+      }
+
       console.log("Raw Gemini Response:", responseText);
 
       const aiResult = JSON.parse(responseText);
@@ -583,6 +621,57 @@ app.patch("/api/cadangan/:id", (req, res) => {
   }
 });
 
+// Helper to return simulated recommendations
+function getSimulatedRecommendations(): OperationRecommendation[] {
+  return [
+    {
+      id: "rec_regen_1",
+      tajuk: "Ops Tapis & Saring (Regenerated)",
+      prioriti: "Tinggi",
+      lokasi: "Chow Kit",
+      impak: "+30% Pengurangan aduan",
+      tindakan: "Pemeriksaan bersepadu di pasar-pasar borong sekitar Chow Kit bermula 3:00 AM.",
+      status: "Menunggu"
+    },
+    {
+      id: "rec_regen_2",
+      tajuk: "Ops Sangkar PATI (Regenerated)",
+      prioriti: "Tinggi",
+      lokasi: "KL Sentral",
+      impak: "+24% Pengurangan aduan",
+      tindakan: "Sekatan keluar di hab pengangkutan utama untuk menyaring pergerakan PATI rentas negeri.",
+      status: "Menunggu"
+    },
+    {
+      id: "rec_regen_3",
+      tajuk: "Ops Sapu Kediaman (Regenerated)",
+      prioriti: "Sederhana",
+      lokasi: "Pudu",
+      impak: "+20% Pengurangan aduan",
+      tindakan: "Serbuan fajar ke atas rumah-rumah flat sewa yang disyaki menjadi rumah transit PATI.",
+      status: "Menunggu"
+    },
+    {
+      id: "rec_regen_4",
+      tajuk: "Ops Belanja Selamat (Regenerated)",
+      prioriti: "Sederhana",
+      lokasi: "Bukit Bintang",
+      impak: "+15% Pengurangan aduan",
+      tindakan: "Saringan dokumentasi ke atas pekerja asing sektor peruncitan dan perkhidmatan di pusat membeli-belah.",
+      status: "Menunggu"
+    },
+    {
+      id: "rec_regen_5",
+      tajuk: "Ops Rondaan Taktikal (Regenerated)",
+      prioriti: "Rendah",
+      lokasi: "Brickfields",
+      impak: "+12% Pengurangan aduan",
+      tindakan: "Rondaan kaki secara berkala oleh anggota beruniform di sekitar kedai-kedai runcit India-Pakistan.",
+      status: "Menunggu"
+    }
+  ];
+}
+
 // 5. Regenerate recommendations (Simulate running AI model)
 app.post("/api/cadangan/regenerate", async (req, res) => {
   // Reset recommendations list to dynamic variations to simulate regenerating
@@ -608,13 +697,14 @@ Kembalikan jawapan anda dalam format JSON sahaja berupa sebuah senarai (array) o
   }
 ]`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: { responseMimeType: "application/json" }
+      const responseText = await generateContentWithRetry(prompt, {
+        responseMimeType: "application/json"
       });
 
-      const responseText = response.text?.trim() || "[]";
+      if (!responseText) {
+        throw new Error("Gemini returned empty or failed all attempts for recommendations.");
+      }
+
       const results = JSON.parse(responseText);
       if (Array.isArray(results) && results.length > 0) {
         recommendations = results.map((r, i) => ({
@@ -626,59 +716,16 @@ Kembalikan jawapan anda dalam format JSON sahaja berupa sebuah senarai (array) o
           tindakan: r.tindakan || "Pemeriksaan berjadual.",
           status: "Menunggu"
         }));
+      } else {
+        recommendations = getSimulatedRecommendations();
       }
     } else {
       // Offline simulation shuffle/regenerate
-      recommendations = [
-        {
-          id: "rec_regen_1",
-          tajuk: "Ops Tapis & Saring (Regenerated)",
-          prioriti: "Tinggi",
-          lokasi: "Chow Kit",
-          impak: "+30% Pengurangan aduan",
-          tindakan: "Pemeriksaan bersepadu di pasar-pasar borong sekitar Chow Kit bermula 3:00 AM.",
-          status: "Menunggu"
-        },
-        {
-          id: "rec_regen_2",
-          tajuk: "Ops Sangkar PATI (Regenerated)",
-          prioriti: "Tinggi",
-          lokasi: "KL Sentral",
-          impak: "+24% Pengurangan aduan",
-          tindakan: "Sekatan keluar di hab pengangkutan utama untuk menyaring pergerakan PATI rentas negeri.",
-          status: "Menunggu"
-        },
-        {
-          id: "rec_regen_3",
-          tajuk: "Ops Sapu Kediaman (Regenerated)",
-          prioriti: "Sederhana",
-          lokasi: "Pudu",
-          impak: "+20% Pengurangan aduan",
-          tindakan: "Serbuan fajar ke atas rumah-rumah flat sewa yang disyaki menjadi rumah transit PATI.",
-          status: "Menunggu"
-        },
-        {
-          id: "rec_regen_4",
-          tajuk: "Ops Belanja Selamat (Regenerated)",
-          prioriti: "Sederhana",
-          lokasi: "Bukit Bintang",
-          impak: "+15% Pengurangan aduan",
-          tindakan: "Saringan dokumentasi ke atas pekerja asing sektor peruncitan dan perkhidmatan di pusat membeli-belah.",
-          status: "Menunggu"
-        },
-        {
-          id: "rec_regen_5",
-          tajuk: "Ops Rondaan Taktikal (Regenerated)",
-          prioriti: "Rendah",
-          lokasi: "Brickfields",
-          impak: "+12% Pengurangan aduan",
-          tindakan: "Rondaan kaki secara berkala oleh anggota beruniform di sekitar kedai-kedai runcit India-Pakistan.",
-          status: "Menunggu"
-        }
-      ];
+      recommendations = getSimulatedRecommendations();
     }
   } catch (err) {
-    console.error("Error regenerating recommendations:", err);
+    console.warn("Error regenerating recommendations, falling back to simulated data:", err);
+    recommendations = getSimulatedRecommendations();
   }
   res.json(recommendations);
 });
