@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Aduan Bersepadu",
+  "description": "Sistem aduan imigresen bersepadu yang dilengkapi dengan kecerdasan buatan (AI) untuk pengkelasan kategori, cadangan operasi strategik, dan pemetaan hotspot secara interaktif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
