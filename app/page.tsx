@@ -53,12 +53,35 @@ function StatCard({ icon, label, value, trend, danger }: { icon: string; label: 
 }
 
 function Dashboard({ setView }: { setView: (v: View) => void }) {
+  const [activeMenu, setActiveMenu] = useState("Dashboard");
+  const [adminNotice, setAdminNotice] = useState("");
   const side = [["▦","Dashboard"],["◇","Aduan"],["⌘","Operasi"],["▥","Analitik"],["✦","AI Cadangan"],["◎","AI Pengesahan"],["⚑","Hasil Operasi"],["⌖","Peta Hotspot"],["▤","Laporan"],["♢","Notifikasi"],["⚙","Tetapan"]];
+  const targets: Record<string, string> = {
+    Operasi: ".results-panel",
+    Analitik: ".dash-grid",
+    "AI Cadangan": ".ai-panel",
+    "AI Pengesahan": ".approval-panel",
+    "Hasil Operasi": ".results-panel",
+    "Peta Hotspot": ".map-panel",
+  };
+  const handleMenu = (label: string) => {
+    setActiveMenu(label);
+    if (label === "Aduan") { setView("aduan"); return; }
+    if (label === "Dashboard") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    const target = targets[label];
+    if (target) {
+      document.querySelector(target)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setAdminNotice(`${label} dipaparkan pada dashboard`);
+    } else if (label === "Laporan") setAdminNotice("Laporan ringkasan demo sedia untuk pratonton");
+    else if (label === "Notifikasi") setAdminNotice("3 notifikasi demo: 2 aduan baharu dan 1 tindakan selesai");
+    else setAdminNotice("Tetapan demo menggunakan konfigurasi lalai yang selamat");
+    window.setTimeout(() => setAdminNotice(""), 2800);
+  };
   return (
     <main className="admin-shell">
       <aside className="sidebar">
         <div className="admin-brand"><img src="/logo-jim.png" alt=""/><span><b>JABATAN IMIGRESEN MALAYSIA</b><small>WILAYAH PERSEKUTUAN KUALA LUMPUR</small></span></div>
-        <div className="side-nav">{side.map(([ic,label],i)=><button key={label} className={i===0?"active":""} onClick={()=> label === "Aduan" && setView("aduan")}><Icon>{ic}</Icon>{label}{label==="Notifikasi"&&<em>3</em>}</button>)}</div>
+        <div className="side-nav">{side.map(([ic,label])=><button key={label} className={activeMenu===label?"active":""} onClick={()=>handleMenu(label)} aria-label={`Buka ${label}`}><Icon>{ic}</Icon>{label}{label==="Notifikasi"&&<em>3</em>}</button>)}</div>
         <div className="ai-badge"><b>AI</b><span>POWERED</span></div>
       </aside>
       <section className="dashboard-main">
@@ -80,6 +103,7 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
           <article className="dash-panel approval-panel"><PanelTitle n="5" title="AI PENGESAHAN"/><div className="big-ring"><span><b>92%</b>DISAHKAN</span></div><ul><li>Relevan dengan trend aduan <b>✓ Disahkan</b></li><li>Sumber mencukupi <b>✓ Disahkan</b></li><li>Risiko operasi <b>✓ Rendah</b></li></ul></article>
           <article className="dash-panel results-panel"><PanelTitle n="6" title="HASIL OPERASI"/><div className="result-kpis"><span><small>OPERASI DIJALANKAN</small><b>24</b></span><span><small>TANGKAPAN</small><b>156</b></span><span><small>NOTIS DIBERIKAN</small><b>312</b></span><span><small>KOMPAUN</small><b>RM 45,600</b></span></div><div className="line-chart"><i/><i/><i/><i/><i/><i/></div><div className="legend">● Operasi　<span>● Tangkapan</span>　<em>● Notis</em>　<b>● Kompaun</b></div></article>
         </section>
+        {adminNotice&&<div className="toast admin-toast" role="status">✓ {adminNotice}</div>}
       </section>
     </main>
   );
@@ -132,10 +156,10 @@ function Review({title,items}:{title:string;items:string[][]}){return <div><h3>{
 
 function FormAside({step}:{step:number}){return <div className="form-aside"><TipBox title="Ringkasan Aduan"><dl><dt>No. Rujukan</dt><dd>IM.W01/W-ES/5/VI/26/493</dd><dt>Sumber Aduan</dt><dd>SISPAA</dd><dt>Kategori</dt><dd>Pekerja Asing Tanpa Permit</dd><dt>Nama Pengadu</dt><dd>{fields.name}</dd></dl></TipBox><TipBox><p>✓ Sila berikan maklumat yang lengkap dan tepat.</p><p>✓ Maklumat anda dirahsiakan.</p><p>✓ Anda boleh menyemak status selepas dihantar.</p>{step===5&&<p>ⓘ Aduan akan dihantar kepada unit penguatkuasaan berkaitan.</p>}</TipBox></div>}
 
-function Tracking(){const [ref,setRef]=useState("IM.W01/W-ES/5/VI/26/493"); const [shown,setShown]=useState(true); return <div className="content-page"><div className="intro"><span>SEMAKAN ADUAN</span><h1>Jejaki status aduan anda</h1><p>Masukkan nombor rujukan yang diterima selepas aduan dihantar.</p></div><div className="track-search"><input value={ref} onChange={e=>setRef(e.target.value)} aria-label="Nombor rujukan"/><button onClick={()=>setShown(true)}>Semak Status</button></div>{shown&&<div className="status-card"><div className="status-head"><div><small>NO. RUJUKAN</small><b>{ref}</b></div><span>DALAM TINDAKAN</span></div><div className="timeline"><div className="done"><i>✓</i><b>Aduan diterima</b><small>18 Jun 2025 · 10:24 AM</small></div><div className="done"><i>✓</i><b>Semakan awal selesai</b><small>18 Jun 2025 · 11:10 AM</small></div><div className="current"><i>3</i><b>Dalam tindakan unit operasi</b><small>Dikemas kini 19 Jun 2025 · 9:30 AM</small></div><div><i>4</i><b>Keputusan</b><small>Menunggu tindakan</small></div></div><div className="officer-note"><b>Kemas kini terkini</b><p>Maklumat telah disahkan dan disalurkan kepada Unit Penguatkuasaan WPKL untuk tindakan lanjut.</p></div></div>}</div>}
+function Tracking(){const [ref,setRef]=useState("IM.W01/W-ES/5/VI/26/493"); const [submittedRef,setSubmittedRef]=useState(ref); const checkStatus=()=>{if(ref.trim())setSubmittedRef(ref.trim())}; return <div className="content-page"><div className="intro"><span>SEMAKAN ADUAN</span><h1>Jejaki status aduan anda</h1><p>Masukkan nombor rujukan yang diterima selepas aduan dihantar.</p></div><div className="track-search"><input value={ref} onChange={e=>setRef(e.target.value)} onKeyDown={e=>e.key==="Enter"&&checkStatus()} aria-label="Nombor rujukan"/><button onClick={checkStatus} disabled={!ref.trim()}>Semak Status</button></div><div key={submittedRef} className="status-card status-refresh"><div className="status-head"><div><small>NO. RUJUKAN</small><b>{submittedRef}</b></div><span>DALAM TINDAKAN</span></div><div className="timeline"><div className="done"><i>✓</i><b>Aduan diterima</b><small>18 Jun 2025 · 10:24 AM</small></div><div className="done"><i>✓</i><b>Semakan awal selesai</b><small>18 Jun 2025 · 11:10 AM</small></div><div className="current"><i>3</i><b>Dalam tindakan unit operasi</b><small>Dikemas kini 19 Jun 2025 · 9:30 AM</small></div><div><i>4</i><b>Keputusan</b><small>Menunggu tindakan</small></div></div><div className="officer-note"><b>Kemas kini terkini</b><p>Maklumat telah disahkan dan disalurkan kepada Unit Penguatkuasaan WPKL untuk tindakan lanjut.</p></div></div></div>}
 
 function InfoPage({help=false}:{help?:boolean}){const items=help?["Bagaimana membuat aduan?","Maklumat apa yang diperlukan?","Bagaimana identiti saya dilindungi?","Bilakah aduan akan diproses?"]:["Aduan berkaitan pendatang asing tanpa izin","Penyalahgunaan pas atau permit","Aktiviti pemalsuan dokumen imigresen","Majikan yang menggaji pekerja tanpa permit sah"]; return <div className="content-page"><div className="intro"><span>{help?"PUSAT BANTUAN":"MAKLUMAT"}</span><h1>{help?"Kami sedia membantu":"Salurkan maklumat, bantu penguatkuasaan"}</h1><p>{help?"Jawapan ringkas untuk membantu anda menggunakan sistem e-Aduan.":"Aduan yang tepat membantu Jabatan Imigresen Malaysia merancang tindakan yang lebih berkesan."}</p></div><div className="info-grid">{items.map((x,i)=><article key={x}><span>{help?"?":i+1}</span><h3>{x}</h3><p>{help?"Klik untuk melihat penerangan dan panduan langkah demi langkah.":"Sertakan lokasi, masa kejadian dan bukti sokongan jika tersedia."}</p></article>)}</div></div>}
 
-function Success({setView}:{setView:(v:View)=>void}){return <div className="success-page"><div className="success-mark">✓</div><span>ADUAN BERJAYA DIHANTAR</span><h1>Terima kasih atas kerjasama anda</h1><p>Aduan telah direkodkan dan akan disalurkan kepada unit penguatkuasaan berkaitan.</p><div className="reference"><small>NOMBOR RUJUKAN</small><b>IM.W01/W-ES/5/VI/26/493</b><button onClick={()=>navigator.clipboard?.writeText("IM.W01/W-ES/5/VI/26/493")}>Salin nombor</button></div><div className="success-actions"><button className="btn primary" onClick={()=>setView("semakan")}>Semak Status Aduan</button><button className="btn ghost" onClick={()=>setView("dashboard")}>Kembali ke Utama</button></div></div>}
+function Success({setView}:{setView:(v:View)=>void}){const [copied,setCopied]=useState(false); const copyRef=async()=>{const value="IM.W01/W-ES/5/VI/26/493";try{await navigator.clipboard.writeText(value)}catch{const area=document.createElement("textarea");area.value=value;document.body.appendChild(area);area.select();document.execCommand("copy");area.remove()}setCopied(true);window.setTimeout(()=>setCopied(false),2200)};return <div className="success-page"><div className="success-mark">✓</div><span>ADUAN BERJAYA DIHANTAR</span><h1>Terima kasih atas kerjasama anda</h1><p>Aduan telah direkodkan dan akan disalurkan kepada unit penguatkuasaan berkaitan.</p><div className="reference"><small>NOMBOR RUJUKAN</small><b>IM.W01/W-ES/5/VI/26/493</b><button onClick={copyRef}>{copied?"✓ Sudah disalin":"Salin nombor"}</button></div><div className="success-actions"><button className="btn primary" onClick={()=>setView("semakan")}>Semak Status Aduan</button><button className="btn ghost" onClick={()=>setView("dashboard")}>Kembali ke Utama</button></div></div>}
 
 export default function Home(){const [view,setView]=useState<View>("dashboard"); const portal=view!=="dashboard"; const content=useMemo(()=>{if(view==="aduan")return <ComplaintForm setView={setView}/>;if(view==="semakan")return <Tracking/>;if(view==="maklumat")return <InfoPage/>;if(view==="bantuan")return <InfoPage help/>;if(view==="berjaya")return <Success setView={setView}/>;return <Dashboard setView={setView}/>},[view]); return <>{portal&&<PortalHeader view={view} setView={setView}/>} {content}{portal&&<footer><span>© 2025 Jabatan Imigresen Malaysia. Hak Cipta Terpelihara.</span><span>Dasar Privasi　|　Terma Penggunaan　|　Panduan Pengguna</span><span>Demo pengalaman pelanggan</span></footer>}</>}
