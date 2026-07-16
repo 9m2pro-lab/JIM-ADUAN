@@ -55,6 +55,23 @@ function StatCard({ icon, label, value, trend, danger }: { icon: string; label: 
 function Dashboard({ setView }: { setView: (v: View) => void }) {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [adminNotice, setAdminNotice] = useState("");
+  const [period, setPeriod] = useState<"Hari Ini"|"7 Hari"|"30 Hari">("Hari Ini");
+  const [liveMode, setLiveMode] = useState(true);
+  const [hotspot, setHotspot] = useState(0);
+  const [lastSync, setLastSync] = useState("3:52 PM");
+  const periodData={
+    "Hari Ini":{received:"1,247",process:"420",done:"789",critical:"58",response:"2.1 jam",ops:"24",arrests:"156"},
+    "7 Hari":{received:"7,842",process:"1,306",done:"6,478",critical:"214",response:"2.4 jam",ops:"137",arrests:"684"},
+    "30 Hari":{received:"31,608",process:"3,914",done:"27,122",critical:"906",response:"2.8 jam",ops:"528",arrests:"2,431"},
+  }[period];
+  const hotspotData=[
+    {name:"KL Sentral",cases:156,risk:"Tinggi",detail:"Puncak aduan 9:00 AM – 1:00 PM"},
+    {name:"Pudu",cases:132,risk:"Tinggi",detail:"Peningkatan PATI dan dokumen tamat tempoh"},
+    {name:"Chow Kit",cases:98,risk:"Tinggi",detail:"23 aduan memerlukan semakan silang"},
+    {name:"Bukit Bintang",cases:76,risk:"Sederhana",detail:"Aktiviti tertumpu di premis perniagaan"},
+    {name:"Brickfields",cases:65,risk:"Sederhana",detail:"Trend stabil dalam tempoh 24 jam"},
+  ];
+  const notify=(message:string)=>{setAdminNotice(message);window.setTimeout(()=>setAdminNotice(""),2800)};
   const side = [["▦","Dashboard"],["◇","Aduan"],["⌘","Operasi"],["▥","AI Pengkelasan"],["✦","AI Cadangan"],["◎","AI Pengesahan"],["⚑","Hasil Operasi"],["⌖","Peta Hotspot"],["▤","Laporan"],["♢","Notifikasi"],["⚙","Tetapan"]];
   const targets: Record<string, string> = {
     Operasi: ".results-panel",
@@ -85,23 +102,24 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
         <div className="ai-badge"><b>AI</b><span>POWERED</span></div>
       </aside>
       <section className="dashboard-main">
-        <div className="dash-topbar"><div><span className="live-dot"/> SISTEM AKTIF</div><div>18 JUN 2025 <i/> 3:52 PM <span className="avatar">MF</span></div></div>
+        <div className="dash-topbar"><div><span className={`live-dot ${liveMode?"":"paused"}`}/> {liveMode?"DATA LANGSUNG AKTIF":"KEMAS KINI DIJEDA"}</div><div>18 JUN 2025 <i/> Sinkron terakhir {lastSync} <span className="avatar">MF</span></div></div>
+        <section className="command-hero"><div><span className="eyebrow">PUSAT KAWALAN · WPKL</span><h1>Selamat petang, Muhammad Faiz.</h1><p>Pantau aduan, risiko dan keberkesanan operasi dalam satu paparan masa nyata.</p></div><div className="hero-controls"><div className="period-switch" aria-label="Tempoh laporan">{(["Hari Ini","7 Hari","30 Hari"] as const).map(x=><button key={x} className={period===x?"active":""} onClick={()=>setPeriod(x)}>{x}</button>)}</div><button className={`live-toggle ${liveMode?"active":""}`} onClick={()=>{setLiveMode(v=>!v);notify(liveMode?"Auto-kemas kini dijeda":"Auto-kemas kini diaktifkan")}}><i/> {liveMode?"Live":"Dijeda"}</button><button className="refresh-btn" onClick={()=>{setLastSync(new Date().toLocaleTimeString("en-MY",{hour:"numeric",minute:"2-digit"}));notify("Dashboard dikemas kini dengan data demo terbaru")}}>↻ Segar Semula</button></div></section>
         <div className="demo-bar"><span><b>DEMO INTERAKTIF</b> Data simulasi untuk pengalaman pelanggan</span><div className="demo-actions"><button className="outline" onClick={()=>setActiveMenu(activeMenu==="AI Pengkelasan"?"Dashboard":"AI Pengkelasan")}>{activeMenu==="AI Pengkelasan"?"Kembali Dashboard":"AI Pengkelasan"}</button><button onClick={()=>setView("aduan")}>Cuba Hantar Aduan →</button></div></div>
-        {activeMenu==="AI Pengkelasan"?<ClassificationDemo/>:<><section className="stats-row">
-          <StatCard icon="✓" label="JUMLAH ADUAN DITERIMA" value="1,247" trend="▲ 18.6% dari semalam"/>
-          <StatCard icon="◉" label="ADUAN DALAM PROSES" value="420" trend="▲ 12.3% dari semalam"/>
-          <StatCard icon="◈" label="ADUAN SELESAI" value="789" trend="▲ 15.9% dari semalam"/>
-          <StatCard icon="⌁" label="PURATA MASA RESPONS" value="2.1 jam" trend="▼ 8% lebih pantas"/>
-          <StatCard icon="⚠" label="ADUAN KRITIKAL (HIGH)" value="58" trend="▼ 5% dari semalam" danger/>
+        {activeMenu==="AI Pengkelasan"?<ClassificationDemo/>:<><div className="activity-ribbon"><span><i className="pulse"/> Sistem menerima <b>12 aduan baharu</b> dalam 15 minit</span><span>✦ AI mengklasifikasi <b>98.7%</b> tanpa semakan manual</span><span>⌖ Hotspot aktif: <b>{hotspotData[hotspot].name}</b></span></div><section className="stats-row">
+          <StatCard icon="✓" label="JUMLAH ADUAN DITERIMA" value={periodData.received} trend="▲ 18.6% dari tempoh lalu"/>
+          <StatCard icon="◉" label="ADUAN DALAM PROSES" value={periodData.process} trend="▲ 12.3% dari tempoh lalu"/>
+          <StatCard icon="◈" label="ADUAN SELESAI" value={periodData.done} trend="▲ 15.9% dari tempoh lalu"/>
+          <StatCard icon="⌁" label="PURATA MASA RESPONS" value={periodData.response} trend="▼ 8% lebih pantas"/>
+          <StatCard icon="⚠" label="ADUAN KRITIKAL (HIGH)" value={periodData.critical} trend="▼ 5% dari tempoh lalu" danger/>
           <article className="stat-card score"><div className="mini-ring"><b>92%</b></div><div><small>PRESTASI OPERASI</small><span className="green">Sangat Baik</span></div></article>
         </section>
         <section className="dash-grid">
-          <article className="dash-panel source-panel"><PanelTitle n="1" title="SUMBER PENERIMAAN ADUAN"/><div className="source-body"><ul><li><b>SISPAA</b><span>512</span><em>41%</em></li><li><b>E-MEL</b><span>298</span><em>24%</em></li><li><b>SURAT</b><span>126</span><em>10%</em></li><li><b>HADIR (WALK IN)</b><span>152</span><em>12%</em></li><li><b>TELEFON</b><span>98</span><em>8%</em></li><li><b>LOKASI GPS</b><span>61</span><em>5%</em></li></ul><div className="donut"><span><b>1,247</b>JUMLAH</span></div></div></article>
+          <article className="dash-panel source-panel"><PanelTitle n="1" title="SUMBER PENERIMAAN ADUAN"/><div className="source-body"><ul>{[["SISPAA","512","41%"],["E-MEL","298","24%"],["SURAT","126","10%"],["HADIR (WALK IN)","152","12%"],["TELEFON","98","8%"],["LOKASI GPS","61","5%"]].map(([name,count,share])=><li key={name}><button onClick={()=>notify(`${count} aduan diterima melalui ${name}`)}><b>{name}</b><span>{count}</span><em>{share}</em></button></li>)}</ul><button className="donut donut-button" onClick={()=>setActiveMenu("AI Pengkelasan")} aria-label="Buka pecahan 1,247 aduan"><span><b>1,247</b>JUMLAH<small>Lihat butiran →</small></span></button></div></article>
           <article className="dash-panel category-panel"><PanelTitle n="2" title="PENGKELASAN KATEGORI ADUAN"/><div className="category-body"><div className="category-donut"><span><b>1,247</b>JUMLAH</span></div><ul><li><i className="high"/>HIGH PROFILE <b>58</b></li><li><i className="medium"/>MEDIUM <b>512</b></li><li><i className="low"/>LOW <b>677</b></li></ul></div><div className="alert-strip">HIGH PROFILE ALERT <b>58</b></div></article>
-          <article className="dash-panel map-panel"><PanelTitle n="3" title="ANALISIS HOTSPOT – ADUAN SPATIAL"/><div className="heat-map"><span className="heat h1"/><span className="heat h2"/><span className="heat h3"/><span className="heat h4"/><b>KUALA<br/>LUMPUR</b></div><ol><li>KL Sentral <em>Tinggi</em></li><li>Pudu <em>Tinggi</em></li><li>Chow Kit <em>Tinggi</em></li><li>Bukit Bintang <em>Sederhana</em></li><li>Brickfields <em>Sederhana</em></li></ol></article>
-          <article className="dash-panel ai-panel"><PanelTitle n="4" title="AI CADANGAN OPERASI"/><div className="recommend"><span>⌖</span><p><b>Peruntukan anggota tambahan di KL Sentral</b><small>Berdasarkan corak aduan tinggi antara 9:00 AM – 1:00 PM</small></p><em>PRIORITI TINGGI</em></div><div className="recommend"><span>◈</span><p><b>Ops Tapis di Chow Kit</b><small>Peningkatan aduan berkaitan PATI dan dokumen tamat tempoh</small></p><em>SEDERHANA</em></div><div className="confidence"><span>KEYAKINAN AI</span><i/><b>92%</b></div></article>
+          <article className="dash-panel map-panel"><PanelTitle n="3" title="ANALISIS HOTSPOT – ADUAN SPATIAL"/><div className="heat-map"><span className="heat h1"/><span className="heat h2"/><span className="heat h3"/><span className="heat h4"/><b>{hotspotData[hotspot].name}</b><div className="map-focus"><strong>{hotspotData[hotspot].cases} aduan</strong><span>{hotspotData[hotspot].detail}</span></div></div><ol>{hotspotData.map((x,i)=><li key={x.name} className={hotspot===i?"active":""}><button onClick={()=>setHotspot(i)}><span><b>{i+1}. {x.name}</b><small>{x.cases} aduan</small></span><em>{x.risk}</em></button></li>)}</ol></article>
+          <article className="dash-panel ai-panel"><PanelTitle n="4" title="AI CADANGAN OPERASI"/><div className="recommend"><span>⌖</span><p><b>Peruntukan anggota tambahan di KL Sentral</b><small>Berdasarkan corak aduan tinggi antara 9:00 AM – 1:00 PM</small></p><em>TINGGI</em><button onClick={()=>notify("Cadangan KL Sentral dihantar kepada penyelia operasi")}>Aktifkan</button></div><div className="recommend"><span>◈</span><p><b>Ops Tapis di Chow Kit</b><small>Peningkatan aduan berkaitan PATI dan dokumen tamat tempoh</small></p><em>SEDERHANA</em><button onClick={()=>notify("Cadangan Ops Tapis ditambah ke pelan operasi")}>Aktifkan</button></div><div className="confidence"><span>KEYAKINAN AI</span><i/><b>92%</b></div></article>
           <article className="dash-panel approval-panel"><PanelTitle n="5" title="AI PENGESAHAN"/><div className="big-ring"><span><b>92%</b>DISAHKAN</span></div><ul><li>Relevan dengan trend aduan <b>✓ Disahkan</b></li><li>Sumber mencukupi <b>✓ Disahkan</b></li><li>Risiko operasi <b>✓ Rendah</b></li></ul></article>
-          <article className="dash-panel results-panel"><PanelTitle n="6" title="HASIL OPERASI"/><div className="result-kpis"><span><small>OPERASI DIJALANKAN</small><b>24</b></span><span><small>TANGKAPAN</small><b>156</b></span><span><small>NOTIS DIBERIKAN</small><b>312</b></span><span><small>KOMPAUN</small><b>RM 45,600</b></span></div><div className="line-chart"><i/><i/><i/><i/><i/><i/></div><div className="legend">● Operasi　<span>● Tangkapan</span>　<em>● Notis</em>　<b>● Kompaun</b></div></article>
+          <article className="dash-panel results-panel"><PanelTitle n="6" title={`HASIL OPERASI · ${period.toUpperCase()}`}/><div className="result-kpis"><span><small>OPERASI DIJALANKAN</small><b>{periodData.ops}</b></span><span><small>TANGKAPAN</small><b>{periodData.arrests}</b></span><span><small>NOTIS DIBERIKAN</small><b>{period==="Hari Ini"?"312":period==="7 Hari"?"1,426":"5,908"}</b></span><span><small>KOMPAUN</small><b>{period==="Hari Ini"?"RM 45,600":period==="7 Hari"?"RM 284K":"RM 1.16J"}</b></span></div><div className="line-chart"><i/><i/><i/><i/><i/><i/></div><div className="legend">● Operasi　<span>● Tangkapan</span>　<em>● Notis</em>　<b>● Kompaun</b></div></article>
         </section></>}
         {adminNotice&&<div className="toast admin-toast" role="status">✓ {adminNotice}</div>}
       </section>
