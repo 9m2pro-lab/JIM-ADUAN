@@ -55,10 +55,9 @@ function StatCard({ icon, label, value, trend, danger }: { icon: string; label: 
 function Dashboard({ setView }: { setView: (v: View) => void }) {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [adminNotice, setAdminNotice] = useState("");
-  const side = [["▦","Dashboard"],["◇","Aduan"],["⌘","Operasi"],["▥","Analitik"],["✦","AI Cadangan"],["◎","AI Pengesahan"],["⚑","Hasil Operasi"],["⌖","Peta Hotspot"],["▤","Laporan"],["♢","Notifikasi"],["⚙","Tetapan"]];
+  const side = [["▦","Dashboard"],["◇","Aduan"],["⌘","Operasi"],["▥","AI Pengkelasan"],["✦","AI Cadangan"],["◎","AI Pengesahan"],["⚑","Hasil Operasi"],["⌖","Peta Hotspot"],["▤","Laporan"],["♢","Notifikasi"],["⚙","Tetapan"]];
   const targets: Record<string, string> = {
     Operasi: ".results-panel",
-    Analitik: ".dash-grid",
     "AI Cadangan": ".ai-panel",
     "AI Pengesahan": ".approval-panel",
     "Hasil Operasi": ".results-panel",
@@ -68,6 +67,7 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
     setActiveMenu(label);
     if (label === "Aduan") { setView("aduan"); return; }
     if (label === "Dashboard") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    if (label === "AI Pengkelasan") { setAdminNotice("1,247 aduan demo telah dikelaskan oleh AI"); window.setTimeout(() => setAdminNotice(""), 2800); return; }
     const target = targets[label];
     if (target) {
       document.querySelector(target)?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -86,8 +86,8 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
       </aside>
       <section className="dashboard-main">
         <div className="dash-topbar"><div><span className="live-dot"/> SISTEM AKTIF</div><div>18 JUN 2025 <i/> 3:52 PM <span className="avatar">MF</span></div></div>
-        <div className="demo-bar"><span><b>DEMO INTERAKTIF</b> Data simulasi untuk pengalaman pelanggan</span><button onClick={()=>setView("aduan")}>Cuba Hantar Aduan →</button></div>
-        <section className="stats-row">
+        <div className="demo-bar"><span><b>DEMO INTERAKTIF</b> Data simulasi untuk pengalaman pelanggan</span><div className="demo-actions"><button className="outline" onClick={()=>setActiveMenu(activeMenu==="AI Pengkelasan"?"Dashboard":"AI Pengkelasan")}>{activeMenu==="AI Pengkelasan"?"Kembali Dashboard":"AI Pengkelasan"}</button><button onClick={()=>setView("aduan")}>Cuba Hantar Aduan →</button></div></div>
+        {activeMenu==="AI Pengkelasan"?<ClassificationDemo/>:<><section className="stats-row">
           <StatCard icon="✓" label="JUMLAH ADUAN DITERIMA" value="1,247" trend="▲ 18.6% dari semalam"/>
           <StatCard icon="◉" label="ADUAN DALAM PROSES" value="420" trend="▲ 12.3% dari semalam"/>
           <StatCard icon="◈" label="ADUAN SELESAI" value="789" trend="▲ 15.9% dari semalam"/>
@@ -102,7 +102,7 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
           <article className="dash-panel ai-panel"><PanelTitle n="4" title="AI CADANGAN OPERASI"/><div className="recommend"><span>⌖</span><p><b>Peruntukan anggota tambahan di KL Sentral</b><small>Berdasarkan corak aduan tinggi antara 9:00 AM – 1:00 PM</small></p><em>PRIORITI TINGGI</em></div><div className="recommend"><span>◈</span><p><b>Ops Tapis di Chow Kit</b><small>Peningkatan aduan berkaitan PATI dan dokumen tamat tempoh</small></p><em>SEDERHANA</em></div><div className="confidence"><span>KEYAKINAN AI</span><i/><b>92%</b></div></article>
           <article className="dash-panel approval-panel"><PanelTitle n="5" title="AI PENGESAHAN"/><div className="big-ring"><span><b>92%</b>DISAHKAN</span></div><ul><li>Relevan dengan trend aduan <b>✓ Disahkan</b></li><li>Sumber mencukupi <b>✓ Disahkan</b></li><li>Risiko operasi <b>✓ Rendah</b></li></ul></article>
           <article className="dash-panel results-panel"><PanelTitle n="6" title="HASIL OPERASI"/><div className="result-kpis"><span><small>OPERASI DIJALANKAN</small><b>24</b></span><span><small>TANGKAPAN</small><b>156</b></span><span><small>NOTIS DIBERIKAN</small><b>312</b></span><span><small>KOMPAUN</small><b>RM 45,600</b></span></div><div className="line-chart"><i/><i/><i/><i/><i/><i/></div><div className="legend">● Operasi　<span>● Tangkapan</span>　<em>● Notis</em>　<b>● Kompaun</b></div></article>
-        </section>
+        </section></>}
         {adminNotice&&<div className="toast admin-toast" role="status">✓ {adminNotice}</div>}
       </section>
     </main>
@@ -110,6 +110,61 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
 }
 
 function PanelTitle({n,title}:{n:string;title:string}) { return <div className="panel-title"><b>{n}</b>{title}</div> }
+
+type DemoCase = { id: string; title: string; area: string; time: string; score: number; category: "High Profile" | "Medium" | "Low" };
+
+const demoCases: DemoCase[] = [
+  {id:"IM-KL-2025-0618-093",title:"Sindiket dokumen perjalanan palsu disyaki beroperasi",area:"Chow Kit",time:"18 Jun · 3:42 PM",score:97,category:"High Profile"},
+  {id:"IM-KL-2025-0618-088",title:"Aktiviti penyeludupan migran melalui premis transit",area:"Pudu",time:"18 Jun · 1:15 PM",score:94,category:"High Profile"},
+  {id:"IM-KL-2025-0617-241",title:"Pemalsuan pas kerja melibatkan beberapa syarikat",area:"KL Sentral",time:"17 Jun · 8:30 PM",score:91,category:"High Profile"},
+  {id:"IM-KL-2025-0618-104",title:"Pekerja asing tanpa permit di tapak pembinaan",area:"Bukit Bintang",time:"18 Jun · 4:20 PM",score:86,category:"Medium"},
+  {id:"IM-KL-2025-0618-099",title:"Pekerja restoran dipercayai menggunakan pas tamat tempoh",area:"Brickfields",time:"18 Jun · 3:58 PM",score:82,category:"Medium"},
+  {id:"IM-KL-2025-0618-076",title:"Aktiviti mencurigakan di rumah kongsi pekerja asing",area:"Sentul",time:"18 Jun · 11:05 AM",score:78,category:"Medium"},
+  {id:"IM-KL-2025-0618-109",title:"Pertanyaan prosedur melaporkan majikan tidak patuh",area:"Kepong",time:"18 Jun · 5:10 PM",score:42,category:"Low"},
+  {id:"IM-KL-2025-0618-097",title:"Maklumat tambahan berkaitan aduan terdahulu",area:"Ampang",time:"18 Jun · 3:31 PM",score:36,category:"Low"},
+  {id:"IM-KL-2025-0618-071",title:"Cadangan penambahbaikan saluran aduan awam",area:"Bangsar",time:"18 Jun · 10:22 AM",score:25,category:"Low"},
+];
+
+function ClassificationDemo(){
+  const [selected,setSelected]=useState<DemoCase["category"]|null>(null);
+  const [exported,setExported]=useState(false);
+  const trend=[
+    {day:"12 Jun",high:39,medium:401,low:575},{day:"13 Jun",high:42,medium:416,low:592},
+    {day:"14 Jun",high:47,medium:448,low:618},{day:"15 Jun",high:44,medium:431,low:610},
+    {day:"16 Jun",high:51,medium:486,low:648},{day:"17 Jun",high:56,medium:501,low:671},
+    {day:"18 Jun",high:58,medium:512,low:677},
+  ];
+  const exportReport=()=>{
+    const rows=["ID,Kategori,Tajuk,Lokasi,Masa,Skor AI",...demoCases.map(x=>`"${x.id}","${x.category}","${x.title}","${x.area}","${x.time}",${x.score}`)];
+    const url=URL.createObjectURL(new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"}));
+    const a=document.createElement("a");a.href=url;a.download="laporan-pengkelasan-ai-demo.csv";a.click();URL.revokeObjectURL(url);
+    setExported(true);window.setTimeout(()=>setExported(false),2500);
+  };
+  const columns:[DemoCase["category"],string,string,string[]][]=[
+    ["High Profile","HIGH PROFILE","58 Aduan (4.7%)",["Melibatkan sindiket / penyeludupan","Ancaman keselamatan negara","Kesalahan berulang / riwayat jenayah","Dokumen palsu / penipuan"]],
+    ["Medium","MEDIUM (SEDERHANA)","512 Aduan (41.1%)",["PATI bekerja tanpa dokumen sah","Bekerja tanpa permit / melanggar pas","Tinggal melebihi tempoh dibenarkan","Aktiviti mencurigakan di premis"]],
+    ["Low","LOW (RENDAH)","677 Aduan (54.3%)",["Pertanyaan prosedur atau pentadbiran","Maklumat am tentang imigresen","Cadangan / maklum balas awam","Isu bukan kesalahan imigresen"]],
+  ];
+  return <section className="classification-view">
+    <div className="class-heading"><div><h2>☑ AI PENGKELASAN KATEGORI ADUAN</h2><p>Klasifikasi pintar aduan berdasarkan analisis risiko, impak keselamatan dan parameter sindiket.</p></div><button onClick={exportReport}>⇩ Eksport Laporan</button></div>
+    <div className="class-kpis">
+      <ClassKpi label="JUMLAH ADUAN DIPROSES" value="1,247 Kes" sub="100% daripada jumlah aduan"/>
+      <ClassKpi tone="high" label="HIGH PROFILE" value="58 Kes" sub="▲ 4.7% dari semalam"/>
+      <ClassKpi tone="medium" label="MEDIUM (SEDERHANA)" value="512 Kes" sub="▲ 41.1% dari semalam"/>
+      <ClassKpi tone="low" label="LOW (RENDAH)" value="677 Kes" sub="▲ 54.3% dari semalam"/>
+      <ClassKpi tone="accuracy" label="TAHAP KETEPATAN AI" value="92.4%" sub="▲ 5% dari minggu lepas"/>
+    </div>
+    <div className="source-strip"><b>SUMBER DATA ADUAN (MULTI-SOURCE):</b>{[["SISPAA",512,"41%"],["E-mel",298,"24%"],["Surat",126,"10%"],["Walk-in",152,"12%"],["Telefon",98,"8%"],["Lokasi GPS",61,"5%"]].map(([n,c,p],i)=><span key={String(n)}><i className={`src-dot s${i}`}/>{n} <em>{c} · {p}</em></span>)}</div>
+    <div className="class-content">
+      <div className="category-columns">{columns.map(([key,label,total,features])=><article key={key} className={`category-column ${key.toLowerCase().replace(" ","-")}`}><div><span className="category-tag">{label}</span><h3>{total}</h3><p>{key==="High Profile"?"Isu berimpak tinggi yang memerlukan tindak balas segera dan koordinasi operasi.":key==="Medium"?"Isu berimpak sederhana yang memerlukan semakan dokumen dan tindakan penguatkuasaan.":"Isu berimpak rendah yang lebih kepada maklumat, khidmat nasihat atau pertanyaan sokongan."}</p></div><div className="feature-list"><b>CIRI-CIRI UTAMA</b><ul>{features.map(f=><li key={f}>{f}</li>)}</ul></div><div className="recent-cases"><b>CONTOH ADUAN TERKINI</b>{demoCases.filter(x=>x.category===key).slice(0,3).map(x=><div key={x.id}><span><strong>{x.title}</strong><small>{x.id} · {x.area} · {x.time}</small></span><em>{x.score}%</em></div>)}</div><button onClick={()=>setSelected(key)}>Lihat Senarai Penuh ({key==="High Profile"?58:key==="Medium"?512:677})</button></article>)}</div>
+      <aside className="class-charts"><article><h3>TABURAN KATEGORI ADUAN</h3><div className="distribution"><div className="class-donut"><span><small>JUMLAH</small><b>1,247</b></span></div><div className="distribution-legend"><span><b>58</b>HIGH PROFILE · 4.7%</span><span><b>512</b>MEDIUM · 41.1%</span><span><b>677</b>LOW · 54.3%</span></div></div></article><article><h3>⌁ TREND PENGKELASAN (7 HARI)</h3><div className="trend-bars">{trend.map(x=><div key={x.day} className="trend-day" title={`${x.day}: High ${x.high}, Medium ${x.medium}, Low ${x.low}`}><div><i className="bar high" style={{height:`${Math.max(8,x.high/7)}%`}}/><i className="bar medium" style={{height:`${x.medium/7}%`}}/><i className="bar low" style={{height:`${x.low/7}%`}}/></div><small>{x.day.replace(" Jun","")}</small></div>)}</div><div className="trend-legend"><span>● High</span><em>● Medium</em><b>● Low</b></div></article><article className="ai-insight"><h3>✦ RUMUSAN AI HARI INI</h3><p><b>Chow Kit dan Pudu</b> merekodkan peningkatan aduan berisiko tinggi. Model mencadangkan semakan silang 23 aduan sebelum penugasan operasi malam.</p><span>Keyakinan cadangan: 92.4%</span></article></aside>
+    </div>
+    {selected&&<div className="case-modal" role="dialog" aria-modal="true" aria-label={`Senarai ${selected}`}><div><button className="modal-close" onClick={()=>setSelected(null)} aria-label="Tutup senarai">×</button><span className={`category-tag ${selected.toLowerCase().replace(" ","-")}`}>{selected}</span><h2>Senarai Aduan {selected}</h2><p>Rekod demo terkini untuk menunjukkan pengalaman semakan pegawai.</p><div className="modal-table"><div className="table-head"><span>ID Aduan</span><span>Ringkasan</span><span>Lokasi / Masa</span><span>Skor AI</span></div>{demoCases.filter(x=>x.category===selected).map(x=><div key={x.id}><b>{x.id}</b><span>{x.title}</span><span>{x.area}<small>{x.time}</small></span><em>{x.score}%</em></div>)}</div><button className="modal-done" onClick={()=>setSelected(null)}>Selesai Semakan</button></div></div>}
+    {exported&&<div className="toast admin-toast" role="status">✓ Laporan CSV demo telah dieksport</div>}
+  </section>
+}
+
+function ClassKpi({label,value,sub,tone=""}:{label:string;value:string;sub:string;tone?:string}){return <article className={`class-kpi ${tone}`}><small>{label}</small><b>{value}</b><span>{sub}</span></article>}
 
 function Field({ label, children, className="" }: { label: string; children: ReactNode; className?: string }) {
   return <label className={`field ${className}`}><span>{label}</span>{children}</label>;
