@@ -113,7 +113,6 @@ function Dashboard({ setView, lang }: { setView: (v: View) => void; lang: Lang }
       <aside className="sidebar">
         <div className="admin-brand"><img src="/logo-jim.png" alt="Logo rasmi Jabatan Imigresen Malaysia"/><span><b>JABATAN IMIGRESEN MALAYSIA</b><small>WILAYAH PERSEKUTUAN KUALA LUMPUR</small></span></div>
         <div className="side-nav">{side.map(([ic,label])=><button key={label} className={activeMenu===label?"active":""} onClick={()=>handleMenu(label)} aria-label={`${tr(lang,"Buka","Open")} ${sideLabel(label)}`}><Icon>{ic}</Icon>{sideLabel(label)}{label==="Notifikasi"&&unreadNotifications>0&&<em>{unreadNotifications}</em>}</button>)}</div>
-        <div className="ai-badge"><b>AI</b><span>POWERED</span></div>
       </aside>
       <section className="dashboard-main">
         <div className="dash-topbar"><div><span className={`live-dot ${liveMode?"":"paused"}`}/> {liveMode?tr(lang,"DATA LANGSUNG AKTIF","LIVE DATA ACTIVE"):tr(lang,"KEMAS KINI DIJEDA","UPDATES PAUSED")}</div><div>18 JUN 2025 <i/> {tr(lang,"Sinkron terakhir","Last synced")} {lastSync} <span className="avatar">MF</span></div></div>
