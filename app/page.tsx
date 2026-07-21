@@ -68,6 +68,8 @@ function Dashboard({ setView, lang }: { setView: (v: View) => void; lang: Lang }
   const [liveMode, setLiveMode] = useState(true);
   const [hotspot, setHotspot] = useState(0);
   const [lastSync, setLastSync] = useState("3:52 PM");
+  const [workspacePanel,setWorkspacePanel]=useState<"Laporan"|"Notifikasi"|"Tetapan"|null>(null);
+  const [unreadNotifications,setUnreadNotifications]=useState(3);
   const periodData={
     "Hari Ini":{received:"1,247",process:"420",done:"789",critical:"58",response:"2.1 jam",ops:"24",arrests:"156"},
     "7 Hari":{received:"7,842",process:"1,306",done:"6,478",critical:"214",response:"2.4 jam",ops:"137",arrests:"684"},
@@ -81,6 +83,7 @@ function Dashboard({ setView, lang }: { setView: (v: View) => void; lang: Lang }
     {name:"Brickfields",cases:65,risk:"Sederhana",detail:"Trend stabil dalam tempoh 24 jam"},
   ];
   const notify=(message:string)=>{setAdminNotice(message);window.setTimeout(()=>setAdminNotice(""),2800)};
+  const exportOperations=()=>{const rows=["Metrik,Nilai,Tempoh",`Aduan diterima,${periodData.received},${period}`,`Aduan dalam proses,${periodData.process},${period}`,`Aduan selesai,${periodData.done},${period}`,`Operasi dijalankan,${periodData.ops},${period}`,`Tangkapan,${periodData.arrests},${period}`];const url=URL.createObjectURL(new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=url;a.download="laporan-operasi-jim-demo.csv";a.click();URL.revokeObjectURL(url);notify(tr(lang,"Laporan operasi berjaya dieksport","Operations report exported"))};
   const side = [["▦","Dashboard"],["◇","Aduan"],["⌘","Operasi"],["▥","AI Pengkelasan"],["✦","AI Cadangan"],["◎","AI Pengesahan"],["⚑","Hasil Operasi"],["⌖","Peta Hotspot"],["▤","Laporan"],["♢","Notifikasi"],["⚙","Tetapan"]];
   const targets: Record<string, string> = {
     Operasi: ".results-panel",
@@ -93,23 +96,23 @@ function Dashboard({ setView, lang }: { setView: (v: View) => void; lang: Lang }
   const sideLabel=(label:string)=>lang==="BM"?label:(sideEn[label]||label);
   const handleMenu = (label: string) => {
     setActiveMenu(label);
+    setWorkspacePanel(null);
     if (label === "Aduan") { setView("aduan"); return; }
-    if (label === "Dashboard") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    if (label === "Dashboard") { document.querySelector(".dashboard-main")?.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (label === "AI Pengkelasan") { setAdminNotice("1,247 aduan demo telah dikelaskan oleh AI"); window.setTimeout(() => setAdminNotice(""), 2800); return; }
+    if (label === "Laporan" || label === "Notifikasi" || label === "Tetapan") { setWorkspacePanel(label); return; }
     const target = targets[label];
     if (target) {
       document.querySelector(target)?.scrollIntoView({ behavior: "smooth", block: "center" });
       setAdminNotice(`${label} dipaparkan pada dashboard`);
-    } else if (label === "Laporan") setAdminNotice("Laporan ringkasan demo sedia untuk pratonton");
-    else if (label === "Notifikasi") setAdminNotice("3 notifikasi demo: 2 aduan baharu dan 1 tindakan selesai");
-    else setAdminNotice("Tetapan demo menggunakan konfigurasi lalai yang selamat");
+    } else setAdminNotice(tr(lang,`${label} dipaparkan`,`${sideLabel(label)} displayed`));
     window.setTimeout(() => setAdminNotice(""), 2800);
   };
   return (
     <main className="admin-shell">
       <aside className="sidebar">
         <div className="admin-brand"><img src="/logo-jim.png" alt="Logo rasmi Jabatan Imigresen Malaysia"/><span><b>JABATAN IMIGRESEN MALAYSIA</b><small>WILAYAH PERSEKUTUAN KUALA LUMPUR</small></span></div>
-        <div className="side-nav">{side.map(([ic,label])=><button key={label} className={activeMenu===label?"active":""} onClick={()=>handleMenu(label)} aria-label={`${tr(lang,"Buka","Open")} ${sideLabel(label)}`}><Icon>{ic}</Icon>{sideLabel(label)}{label==="Notifikasi"&&<em>3</em>}</button>)}</div>
+        <div className="side-nav">{side.map(([ic,label])=><button key={label} className={activeMenu===label?"active":""} onClick={()=>handleMenu(label)} aria-label={`${tr(lang,"Buka","Open")} ${sideLabel(label)}`}><Icon>{ic}</Icon>{sideLabel(label)}{label==="Notifikasi"&&unreadNotifications>0&&<em>{unreadNotifications}</em>}</button>)}</div>
         <div className="ai-badge"><b>AI</b><span>POWERED</span></div>
       </aside>
       <section className="dashboard-main">
@@ -132,6 +135,11 @@ function Dashboard({ setView, lang }: { setView: (v: View) => void; lang: Lang }
           <article className="dash-panel approval-panel"><PanelTitle n="5" title="AI PENGESAHAN"/><div className="big-ring"><span><b>92%</b>DISAHKAN</span></div><ul><li>Relevan dengan trend aduan <b>✓ Disahkan</b></li><li>Sumber mencukupi <b>✓ Disahkan</b></li><li>Risiko operasi <b>✓ Rendah</b></li></ul></article>
           <article className="dash-panel results-panel"><PanelTitle n="6" title={`HASIL OPERASI · ${period.toUpperCase()}`}/><div className="result-kpis"><span><small>OPERASI DIJALANKAN</small><b>{periodData.ops}</b></span><span><small>TANGKAPAN</small><b>{periodData.arrests}</b></span><span><small>NOTIS DIBERIKAN</small><b>{period==="Hari Ini"?"312":period==="7 Hari"?"1,426":"5,908"}</b></span><span><small>KOMPAUN</small><b>{period==="Hari Ini"?"RM 45,600":period==="7 Hari"?"RM 284K":"RM 1.16J"}</b></span></div><div className="line-chart"><i/><i/><i/><i/><i/><i/></div><div className="legend">● Operasi　<span>● Tangkapan</span>　<em>● Notis</em>　<b>● Kompaun</b></div></article>
         </section></>}
+        {workspacePanel&&<div className="workspace-modal" role="dialog" aria-modal="true" aria-labelledby="workspace-title" onMouseDown={e=>{if(e.target===e.currentTarget)setWorkspacePanel(null)}}><section><div className="workspace-head"><div><span>{tr(lang,"MODUL OPERASI","OPERATIONS MODULE")}</span><h2 id="workspace-title">{sideLabel(workspacePanel)}</h2></div><button onClick={()=>setWorkspacePanel(null)} aria-label={tr(lang,"Tutup modul","Close module")}>×</button></div>
+          {workspacePanel==="Laporan"&&<div className="workspace-content"><p>{tr(lang,`Ringkasan prestasi bagi tempoh ${period}.`,`Performance summary for ${period}.`)}</p><div className="workspace-kpis"><span><small>{tr(lang,"Aduan diterima","Complaints received")}</small><b>{periodData.received}</b></span><span><small>{tr(lang,"Operasi","Operations")}</small><b>{periodData.ops}</b></span><span><small>{tr(lang,"Tangkapan","Arrests")}</small><b>{periodData.arrests}</b></span><span><small>{tr(lang,"Prestasi","Performance")}</small><b>92%</b></span></div><button className="workspace-primary" onClick={exportOperations}>⇩ {tr(lang,"Eksport Laporan CSV","Export CSV Report")}</button></div>}
+          {workspacePanel==="Notifikasi"&&<div className="workspace-content"><div className="notification-list"><article><i className="critical">!</i><div><b>{tr(lang,"Aduan berisiko tinggi diterima","High-risk complaint received")}</b><small>IM-KL-2025-0618-093 · Chow Kit · 3:42 PM</small></div><em>{tr(lang,"Kritikal","Critical")}</em></article><article><i>⌖</i><div><b>{tr(lang,"Hotspot Pudu meningkat 18%","Pudu hotspot increased by 18%")}</b><small>{tr(lang,"Dikemas kini 12 minit lalu","Updated 12 minutes ago")}</small></div><em>{tr(lang,"Amaran","Warning")}</em></article><article><i className="done">✓</i><div><b>{tr(lang,"Operasi IM-24-0618 selesai","Operation IM-24-0618 completed")}</b><small>{tr(lang,"156 tangkapan direkodkan","156 arrests recorded")}</small></div><em>{tr(lang,"Selesai","Completed")}</em></article></div><button className="workspace-primary" onClick={()=>{setUnreadNotifications(0);notify(tr(lang,"Semua notifikasi ditandakan telah dibaca","All notifications marked as read"))}}>✓ {tr(lang,"Tandakan Semua Dibaca","Mark All as Read")}</button></div>}
+          {workspacePanel==="Tetapan"&&<div className="workspace-content"><p>{tr(lang,"Kawalan paparan rasmi tersedia pada bar di bahagian atas skrin.","Official display controls are available in the bar at the top of the screen.")}</p><div className="settings-list"><span><b>{tr(lang,"Bahasa semasa","Current language")}</b><em>{lang==="BM"?"Bahasa Melayu":"English"}</em></span><span><b>{tr(lang,"Saiz tulisan","Text size")}</b><em>{tr(lang,"Boleh dilaraskan A− / A / A+","Adjustable A− / A / A+")}</em></span><span><b>{tr(lang,"Tema paparan","Display theme")}</b><em>{tr(lang,"Mod cerah dan gelap tersedia","Light and dark modes available")}</em></span></div><button className="workspace-primary" onClick={()=>{setWorkspacePanel(null);(document.querySelector(".accessibility-toolbar button") as HTMLElement|null)?.focus()}}>{tr(lang,"Buka Kawalan Paparan","Open Display Controls")}</button></div>}
+        </section></div>}
         {adminNotice&&<div className="toast admin-toast" role="status">✓ {adminNotice}</div>}
       </section>
     </main>
