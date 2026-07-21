@@ -1,8 +1,13 @@
 "use client";
 
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 
 type View = "dashboard" | "aduan" | "semakan" | "maklumat" | "bantuan" | "berjaya";
+type Lang = "BM" | "EN";
+type Theme = "dark" | "light";
+type FontSize = "normal" | "large" | "xlarge";
+
+const tr = (lang: Lang, bm: string, en: string) => lang === "BM" ? bm : en;
 
 const steps = [
   ["Maklumat Aduan", "Butiran asas aduan"],
@@ -25,17 +30,21 @@ function Icon({ children }: { children: ReactNode }) {
   return <span className="icon" aria-hidden="true">{children}</span>;
 }
 
-function PortalHeader({ view, setView }: { view: View; setView: (v: View) => void }) {
+function PortalHeader({ view, setView, lang }: { view: View; setView: (v: View) => void; lang: Lang }) {
+  const navLabels: Record<View, string> = {
+    dashboard: tr(lang,"Utama","Home"), aduan: tr(lang,"Aduan","Complaint"), semakan: tr(lang,"Semakan","Tracking"),
+    maklumat: tr(lang,"Maklumat","Information"), bantuan: tr(lang,"Bantuan","Help"), berjaya: tr(lang,"Berjaya","Success"),
+  };
   return (
     <header className="portal-header">
-      <button className="brand" onClick={() => setView("dashboard")} aria-label="Kembali ke dashboard">
+      <button className="brand" onClick={() => setView("dashboard")} aria-label={tr(lang,"Kembali ke dashboard","Return to dashboard")}>
         <img src="/logo-jim.png" alt="Logo Jabatan Imigresen Malaysia" />
-        <span><b>JABATAN IMIGRESEN MALAYSIA</b><small>e-Aduan Penguatkuasaan</small></span>
+        <span><b>JABATAN IMIGRESEN MALAYSIA</b><small>{tr(lang,"e-Aduan Penguatkuasaan","e-Enforcement Complaint")}</small></span>
       </button>
       <nav aria-label="Navigasi utama">
         {(["dashboard", "aduan", "semakan", "maklumat", "bantuan"] as View[]).map((item) => (
           <button key={item} className={view === item ? "active" : ""} onClick={() => setView(item)}>
-            {item === "dashboard" ? "Utama" : item[0].toUpperCase() + item.slice(1)}
+            {navLabels[item]}
           </button>
         ))}
       </nav>
@@ -52,7 +61,7 @@ function StatCard({ icon, label, value, trend, danger }: { icon: string; label: 
   );
 }
 
-function Dashboard({ setView }: { setView: (v: View) => void }) {
+function Dashboard({ setView, lang }: { setView: (v: View) => void; lang: Lang }) {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [adminNotice, setAdminNotice] = useState("");
   const [period, setPeriod] = useState<"Hari Ini"|"7 Hari"|"30 Hari">("Hari Ini");
@@ -80,6 +89,8 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
     "Hasil Operasi": ".results-panel",
     "Peta Hotspot": ".map-panel",
   };
+  const sideEn: Record<string,string> = {Dashboard:"Dashboard",Aduan:"Complaints",Operasi:"Operations","AI Pengkelasan":"AI Classification","AI Cadangan":"AI Recommendations","AI Pengesahan":"AI Validation","Hasil Operasi":"Operation Results","Peta Hotspot":"Hotspot Map",Laporan:"Reports",Notifikasi:"Notifications",Tetapan:"Settings"};
+  const sideLabel=(label:string)=>lang==="BM"?label:(sideEn[label]||label);
   const handleMenu = (label: string) => {
     setActiveMenu(label);
     if (label === "Aduan") { setView("aduan"); return; }
@@ -98,20 +109,20 @@ function Dashboard({ setView }: { setView: (v: View) => void }) {
     <main className="admin-shell">
       <aside className="sidebar">
         <div className="admin-brand"><img src="/logo-jim.png" alt=""/><span><b>JABATAN IMIGRESEN MALAYSIA</b><small>WILAYAH PERSEKUTUAN KUALA LUMPUR</small></span></div>
-        <div className="side-nav">{side.map(([ic,label])=><button key={label} className={activeMenu===label?"active":""} onClick={()=>handleMenu(label)} aria-label={`Buka ${label}`}><Icon>{ic}</Icon>{label}{label==="Notifikasi"&&<em>3</em>}</button>)}</div>
+        <div className="side-nav">{side.map(([ic,label])=><button key={label} className={activeMenu===label?"active":""} onClick={()=>handleMenu(label)} aria-label={`${tr(lang,"Buka","Open")} ${sideLabel(label)}`}><Icon>{ic}</Icon>{sideLabel(label)}{label==="Notifikasi"&&<em>3</em>}</button>)}</div>
         <div className="ai-badge"><b>AI</b><span>POWERED</span></div>
       </aside>
       <section className="dashboard-main">
-        <div className="dash-topbar"><div><span className={`live-dot ${liveMode?"":"paused"}`}/> {liveMode?"DATA LANGSUNG AKTIF":"KEMAS KINI DIJEDA"}</div><div>18 JUN 2025 <i/> Sinkron terakhir {lastSync} <span className="avatar">MF</span></div></div>
-        <section className="command-hero"><div><span className="eyebrow">PUSAT KAWALAN · WPKL</span><h1>Selamat petang, Muhammad Faiz.</h1><p>Pantau aduan, risiko dan keberkesanan operasi dalam satu paparan masa nyata.</p></div><div className="hero-controls"><div className="period-switch" aria-label="Tempoh laporan">{(["Hari Ini","7 Hari","30 Hari"] as const).map(x=><button key={x} className={period===x?"active":""} onClick={()=>setPeriod(x)}>{x}</button>)}</div><button className={`live-toggle ${liveMode?"active":""}`} onClick={()=>{setLiveMode(v=>!v);notify(liveMode?"Auto-kemas kini dijeda":"Auto-kemas kini diaktifkan")}}><i/> {liveMode?"Live":"Dijeda"}</button><button className="refresh-btn" onClick={()=>{setLastSync(new Date().toLocaleTimeString("en-MY",{hour:"numeric",minute:"2-digit"}));notify("Dashboard dikemas kini dengan data demo terbaru")}}>↻ Segar Semula</button></div></section>
-        <div className="demo-bar"><span><b>DEMO INTERAKTIF</b> Data simulasi untuk pengalaman pelanggan</span><div className="demo-actions"><button className="outline" onClick={()=>setActiveMenu(activeMenu==="AI Pengkelasan"?"Dashboard":"AI Pengkelasan")}>{activeMenu==="AI Pengkelasan"?"Kembali Dashboard":"AI Pengkelasan"}</button><button onClick={()=>setView("aduan")}>Cuba Hantar Aduan →</button></div></div>
-        {activeMenu==="AI Pengkelasan"?<ClassificationDemo/>:<><div className="activity-ribbon"><span><i className="pulse"/> Sistem menerima <b>12 aduan baharu</b> dalam 15 minit</span><span>✦ AI mengklasifikasi <b>98.7%</b> tanpa semakan manual</span><span>⌖ Hotspot aktif: <b>{hotspotData[hotspot].name}</b></span></div><section className="stats-row">
-          <StatCard icon="✓" label="JUMLAH ADUAN DITERIMA" value={periodData.received} trend="▲ 18.6% dari tempoh lalu"/>
-          <StatCard icon="◉" label="ADUAN DALAM PROSES" value={periodData.process} trend="▲ 12.3% dari tempoh lalu"/>
-          <StatCard icon="◈" label="ADUAN SELESAI" value={periodData.done} trend="▲ 15.9% dari tempoh lalu"/>
-          <StatCard icon="⌁" label="PURATA MASA RESPONS" value={periodData.response} trend="▼ 8% lebih pantas"/>
-          <StatCard icon="⚠" label="ADUAN KRITIKAL (HIGH)" value={periodData.critical} trend="▼ 5% dari tempoh lalu" danger/>
-          <article className="stat-card score"><div className="mini-ring"><b>92%</b></div><div><small>PRESTASI OPERASI</small><span className="green">Sangat Baik</span></div></article>
+        <div className="dash-topbar"><div><span className={`live-dot ${liveMode?"":"paused"}`}/> {liveMode?tr(lang,"DATA LANGSUNG AKTIF","LIVE DATA ACTIVE"):tr(lang,"KEMAS KINI DIJEDA","UPDATES PAUSED")}</div><div>18 JUN 2025 <i/> {tr(lang,"Sinkron terakhir","Last synced")} {lastSync} <span className="avatar">MF</span></div></div>
+        <section className="command-hero"><div><span className="eyebrow">{tr(lang,"PUSAT KAWALAN · WPKL","COMMAND CENTRE · WPKL")}</span><h1>{tr(lang,"Selamat petang, Muhammad Faiz.","Good afternoon, Muhammad Faiz.")}</h1><p>{tr(lang,"Pantau aduan, risiko dan keberkesanan operasi dalam satu paparan masa nyata.","Monitor complaints, risks and operational effectiveness in one real-time view.")}</p></div><div className="hero-controls"><div className="period-switch" aria-label={tr(lang,"Tempoh laporan","Report period")}>{(["Hari Ini","7 Hari","30 Hari"] as const).map(x=><button key={x} className={period===x?"active":""} onClick={()=>setPeriod(x)}>{x==="Hari Ini"?tr(lang,x,"Today"):x==="7 Hari"?tr(lang,x,"7 Days"):tr(lang,x,"30 Days")}</button>)}</div><button className={`live-toggle ${liveMode?"active":""}`} onClick={()=>{setLiveMode(v=>!v);notify(liveMode?tr(lang,"Auto-kemas kini dijeda","Auto refresh paused"):tr(lang,"Auto-kemas kini diaktifkan","Auto refresh enabled"))}}><i/> {liveMode?"Live":tr(lang,"Dijeda","Paused")}</button><button className="refresh-btn" onClick={()=>{setLastSync(new Date().toLocaleTimeString("en-MY",{hour:"numeric",minute:"2-digit"}));notify(tr(lang,"Dashboard dikemas kini dengan data demo terbaru","Dashboard refreshed with the latest demo data"))}}>↻ {tr(lang,"Segar Semula","Refresh")}</button></div></section>
+        <div className="demo-bar"><span><b>{tr(lang,"DEMO INTERAKTIF","INTERACTIVE DEMO")}</b> {tr(lang,"Data simulasi untuk pengalaman pelanggan","Simulated data for customer experience")}</span><div className="demo-actions"><button className="outline" onClick={()=>setActiveMenu(activeMenu==="AI Pengkelasan"?"Dashboard":"AI Pengkelasan")}>{activeMenu==="AI Pengkelasan"?tr(lang,"Kembali Dashboard","Back to Dashboard"):tr(lang,"AI Pengkelasan","AI Classification")}</button><button onClick={()=>setView("aduan")}>{tr(lang,"Cuba Hantar Aduan","Try Submitting a Complaint")} →</button></div></div>
+        {activeMenu==="AI Pengkelasan"?<ClassificationDemo lang={lang}/>:<><div className="activity-ribbon"><span><i className="pulse"/> {tr(lang,"Sistem menerima","System received")} <b>{tr(lang,"12 aduan baharu","12 new complaints")}</b> {tr(lang,"dalam 15 minit","in 15 minutes")}</span><span>✦ AI {tr(lang,"mengklasifikasi","classified")} <b>98.7%</b> {tr(lang,"tanpa semakan manual","without manual review")}</span><span>⌖ {tr(lang,"Hotspot aktif","Active hotspot")}: <b>{hotspotData[hotspot].name}</b></span></div><section className="stats-row">
+          <StatCard icon="✓" label={tr(lang,"JUMLAH ADUAN DITERIMA","TOTAL COMPLAINTS RECEIVED")} value={periodData.received} trend={tr(lang,"▲ 18.6% dari tempoh lalu","▲ 18.6% from previous period")}/>
+          <StatCard icon="◉" label={tr(lang,"ADUAN DALAM PROSES","COMPLAINTS IN PROGRESS")} value={periodData.process} trend={tr(lang,"▲ 12.3% dari tempoh lalu","▲ 12.3% from previous period")}/>
+          <StatCard icon="◈" label={tr(lang,"ADUAN SELESAI","COMPLETED COMPLAINTS")} value={periodData.done} trend={tr(lang,"▲ 15.9% dari tempoh lalu","▲ 15.9% from previous period")}/>
+          <StatCard icon="⌁" label={tr(lang,"PURATA MASA RESPONS","AVERAGE RESPONSE TIME")} value={periodData.response.replace("jam",tr(lang,"jam","hrs"))} trend={tr(lang,"▼ 8% lebih pantas","▼ 8% faster")}/>
+          <StatCard icon="⚠" label={tr(lang,"ADUAN KRITIKAL (HIGH)","CRITICAL COMPLAINTS (HIGH)")} value={periodData.critical} trend={tr(lang,"▼ 5% dari tempoh lalu","▼ 5% from previous period")} danger/>
+          <article className="stat-card score"><div className="mini-ring"><b>92%</b></div><div><small>{tr(lang,"PRESTASI OPERASI","OPERATION PERFORMANCE")}</small><span className="green">{tr(lang,"Sangat Baik","Excellent")}</span></div></article>
         </section>
         <section className="dash-grid">
           <article className="dash-panel source-panel"><PanelTitle n="1" title="SUMBER PENERIMAAN ADUAN"/><div className="source-body"><ul>{[["SISPAA","512","41%"],["E-MEL","298","24%"],["SURAT","126","10%"],["HADIR (WALK IN)","152","12%"],["TELEFON","98","8%"],["LOKASI GPS","61","5%"]].map(([name,count,share])=><li key={name}><button onClick={()=>notify(`${count} aduan diterima melalui ${name}`)}><b>{name}</b><span>{count}</span><em>{share}</em></button></li>)}</ul><button className="donut donut-button" onClick={()=>setActiveMenu("AI Pengkelasan")} aria-label="Buka pecahan 1,247 aduan"><span><b>1,247</b>JUMLAH<small>Lihat butiran →</small></span></button></div></article>
@@ -143,7 +154,7 @@ const demoCases: DemoCase[] = [
   {id:"IM-KL-2025-0618-071",title:"Cadangan penambahbaikan saluran aduan awam",area:"Bangsar",time:"18 Jun · 10:22 AM",score:25,category:"Low"},
 ];
 
-function ClassificationDemo(){
+function ClassificationDemo({lang}:{lang:Lang}){
   const [selected,setSelected]=useState<DemoCase["category"]|null>(null);
   const [exported,setExported]=useState(false);
   const trend=[
@@ -164,7 +175,7 @@ function ClassificationDemo(){
     ["Low","LOW (RENDAH)","677 Aduan (54.3%)",["Pertanyaan prosedur atau pentadbiran","Maklumat am tentang imigresen","Cadangan / maklum balas awam","Isu bukan kesalahan imigresen"]],
   ];
   return <section className="classification-view">
-    <div className="class-heading"><div><h2>☑ AI PENGKELASAN KATEGORI ADUAN</h2><p>Klasifikasi pintar aduan berdasarkan analisis risiko, impak keselamatan dan parameter sindiket.</p></div><button onClick={exportReport}>⇩ Eksport Laporan</button></div>
+    <div className="class-heading"><div><h2>☑ {tr(lang,"AI PENGKELASAN KATEGORI ADUAN","AI COMPLAINT CLASSIFICATION")}</h2><p>{tr(lang,"Klasifikasi pintar aduan berdasarkan analisis risiko, impak keselamatan dan parameter sindiket.","Smart complaint classification based on risk analysis, security impact and syndicate indicators.")}</p></div><button onClick={exportReport}>⇩ {tr(lang,"Eksport Laporan","Export Report")}</button></div>
     <div className="class-kpis">
       <ClassKpi label="JUMLAH ADUAN DIPROSES" value="1,247 Kes" sub="100% daripada jumlah aduan"/>
       <ClassKpi tone="high" label="HIGH PROFILE" value="58 Kes" sub="▲ 4.7% dari semalam"/>
@@ -235,4 +246,19 @@ function InfoPage({help=false}:{help?:boolean}){const items=help?["Bagaimana mem
 
 function Success({setView}:{setView:(v:View)=>void}){const [copied,setCopied]=useState(false); const copyRef=async()=>{const value="IM.W01/W-ES/5/VI/26/493";try{await navigator.clipboard.writeText(value)}catch{const area=document.createElement("textarea");area.value=value;document.body.appendChild(area);area.select();document.execCommand("copy");area.remove()}setCopied(true);window.setTimeout(()=>setCopied(false),2200)};return <div className="success-page"><div className="success-mark">✓</div><span>ADUAN BERJAYA DIHANTAR</span><h1>Terima kasih atas kerjasama anda</h1><p>Aduan telah direkodkan dan akan disalurkan kepada unit penguatkuasaan berkaitan.</p><div className="reference"><small>NOMBOR RUJUKAN</small><b>IM.W01/W-ES/5/VI/26/493</b><button onClick={copyRef}>{copied?"✓ Sudah disalin":"Salin nombor"}</button></div><div className="success-actions"><button className="btn primary" onClick={()=>setView("semakan")}>Semak Status Aduan</button><button className="btn ghost" onClick={()=>setView("dashboard")}>Kembali ke Utama</button></div></div>}
 
-export default function Home(){const [view,setView]=useState<View>("dashboard"); const portal=view!=="dashboard"; const content=useMemo(()=>{if(view==="aduan")return <ComplaintForm setView={setView}/>;if(view==="semakan")return <Tracking/>;if(view==="maklumat")return <InfoPage/>;if(view==="bantuan")return <InfoPage help/>;if(view==="berjaya")return <Success setView={setView}/>;return <Dashboard setView={setView}/>},[view]); return <>{portal&&<PortalHeader view={view} setView={setView}/>} {content}{portal&&<footer><span>© 2025 Jabatan Imigresen Malaysia. Hak Cipta Terpelihara.</span><span>Dasar Privasi　|　Terma Penggunaan　|　Panduan Pengguna</span><span>Demo pengalaman pelanggan</span></footer>}</>}
+function AccessibilityToolbar({lang,setLang,theme,setTheme,fontSize,setFontSize}:{lang:Lang;setLang:(v:Lang)=>void;theme:Theme;setTheme:(v:Theme)=>void;fontSize:FontSize;setFontSize:(v:FontSize)=>void}){
+  return <div className="accessibility-toolbar" role="region" aria-label={tr(lang,"Tetapan paparan","Display settings")}>
+    <strong>{tr(lang,"Paparan","Display")}</strong>
+    <div className="access-group" aria-label={tr(lang,"Saiz tulisan","Text size")}><span>{tr(lang,"Tulisan","Text")}</span>{(["normal","large","xlarge"] as FontSize[]).map((x,i)=><button key={x} className={fontSize===x?"active":""} onClick={()=>setFontSize(x)} aria-label={`${tr(lang,"Saiz tulisan","Text size")} ${i+1}`}>{i===0?"A−":i===1?"A":"A+"}</button>)}</div>
+    <div className="access-group theme-switch" aria-label={tr(lang,"Tema warna","Colour theme")}><button className={theme==="light"?"active":""} onClick={()=>setTheme("light")}>☀ {tr(lang,"Cerah","Light")}</button><button className={theme==="dark"?"active":""} onClick={()=>setTheme("dark")}>● {tr(lang,"Gelap","Dark")}</button></div>
+    <div className="access-group language-switch" aria-label={tr(lang,"Pilihan bahasa","Language selection")}><button className={lang==="BM"?"active":""} onClick={()=>setLang("BM")}>BM</button><button className={lang==="EN"?"active":""} onClick={()=>setLang("EN")}>ENGLISH</button></div>
+  </div>
+}
+
+export default function Home(){
+  const [view,setView]=useState<View>("dashboard"); const [lang,setLang]=useState<Lang>("BM"); const [theme,setTheme]=useState<Theme>("dark"); const [fontSize,setFontSize]=useState<FontSize>("large");
+  useEffect(()=>{const saved=window.localStorage.getItem("jim-display-preferences");if(saved){try{const p=JSON.parse(saved);if(p.lang)setLang(p.lang);if(p.theme)setTheme(p.theme);if(p.fontSize)setFontSize(p.fontSize)}catch{}}},[]);
+  useEffect(()=>{window.localStorage.setItem("jim-display-preferences",JSON.stringify({lang,theme,fontSize}))},[lang,theme,fontSize]);
+  const portal=view!=="dashboard"; const content=useMemo(()=>{if(view==="aduan")return <ComplaintForm setView={setView}/>;if(view==="semakan")return <Tracking/>;if(view==="maklumat")return <InfoPage/>;if(view==="bantuan")return <InfoPage help/>;if(view==="berjaya")return <Success setView={setView}/>;return <Dashboard setView={setView} lang={lang}/>},[view,lang]);
+  return <div className={`experience-root theme-${theme} font-${fontSize}`} lang={lang==="BM"?"ms":"en"}><AccessibilityToolbar lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} fontSize={fontSize} setFontSize={setFontSize}/><div className="app-surface">{portal&&<PortalHeader view={view} setView={setView} lang={lang}/>} {content}{portal&&<footer><span>{tr(lang,"© 2025 Jabatan Imigresen Malaysia. Hak Cipta Terpelihara.","© 2025 Immigration Department of Malaysia. All Rights Reserved.")}</span><span>{tr(lang,"Dasar Privasi　|　Terma Penggunaan　|　Panduan Pengguna","Privacy Policy　|　Terms of Use　|　User Guide")}</span><span>{tr(lang,"Demo pengalaman pelanggan","Customer experience demo")}</span></footer>}</div></div>
+}
