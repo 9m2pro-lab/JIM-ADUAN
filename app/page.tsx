@@ -80,8 +80,8 @@ function StatCard({ icon, label, value, trend, danger }: { icon: string; label: 
 }
 
 function Dashboard({ setView, lang, role, onLogout }: { setView: (v: View) => void; lang: Lang; role: AdminRole; onLogout: () => void }) {
-  const homeMenu=role==="operations"?"Operasi":"Dashboard";
-  const [activeMenu, setActiveMenu] = useState(homeMenu);
+  const homeMenu:AdminMenu=role==="operations"?"Operasi":"Dashboard";
+  const [activeMenu, setActiveMenu] = useState<AdminMenu>(homeMenu);
   const [adminNotice, setAdminNotice] = useState("");
   const [period, setPeriod] = useState<"Hari Ini"|"7 Hari"|"30 Hari">("Hari Ini");
   const [liveMode, setLiveMode] = useState(true);
@@ -118,11 +118,10 @@ function Dashboard({ setView, lang, role, onLogout }: { setView: (v: View) => vo
   };
   const focusedModule=moduleMeta[activeMenu];
   const moduleClass=activeMenu==="Operasi"?"module-operasi":activeMenu==="AI Cadangan"?"module-cadangan":activeMenu==="AI Pengesahan"?"module-pengesahan":activeMenu==="Hasil Operasi"?"module-hasil":activeMenu==="Peta Hotspot"?"module-peta":"module-dashboard";
-  const handleMenu = (label: string) => {
+  const handleMenu = (label: AdminMenu) => {
     if(!allowedMenus.has(label)){notify(tr(lang,"Akses tidak dibenarkan untuk akaun ini","This account is not permitted to access that module"));return;}
     setActiveMenu(label);
     setWorkspacePanel(null);
-    if (label === "Aduan") { setView("aduan"); return; }
     if (label === "Dashboard") { document.querySelector(".dashboard-main")?.scrollTo({ top: 0 }); return; }
     if (label === "AI Pengkelasan") { setAdminNotice(`${periodData.received} aduan demo telah dikelaskan`); window.setTimeout(() => setAdminNotice(""), 2800); return; }
     if (label === "Laporan" || label === "Notifikasi" || label === "Tetapan") { setWorkspacePanel(label); return; }
